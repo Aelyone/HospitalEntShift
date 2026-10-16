@@ -1,0 +1,52 @@
+@model List<LedgerRowDto>
+@{
+    MonthDto m = ViewBag.Month; List<AdjustmentDto> adjustments = ViewBag.Adjustments;
+    ViewBag.Title = "سهم و تسویه " + m.Title;
+}
+<div class="bar">
+  <h2>سهم و تسویه — @m.Title <span class="tag @m.StatusCode">@m.StatusLabel</span></h2>
+  <a class="btn" href="/Schedule?y=@m.Jy&m=@m.Jm">بازگشت به برنامه</a>
+</div>
+<p class="guide">واحد شیفت: صبح و عصر ۱، شب ۲. هدف = سهم − ماندهٔ ورودی (حداقل صفر). ماندهٔ خروجی = ورودی + کارکرد + بخشودگی − سهم.
+@(m.Status == MonthStatus.Draft ? "این ماه پیش‌نویس است و ارقام پیش‌نمایش‌اند." : "")</p>
+<table class="grid">
+<thead><tr><th>نام</th><th>نوع</th><th>سهم</th><th>ماندهٔ ورودی</th><th>هدف</th><th>کارکرد</th><th>بخشودگی</th><th>ماندهٔ خروجی</th></tr></thead>
+<tbody>
+@foreach (var r in Model)
+{
+  var close = r.Closing ?? r.Projected;
+  <tr>
+    <td>@r.Name</td><td>@r.Type.ToLabel()</td><td>@r.Share</td><td>@r.Opening</td><td>@r.Target</td><td>@r.Worked</td><td>@r.Forgiveness</td>
+    <td class="@(close < 0 ? "neg" : "")">@close</td>
+  </tr>
+}
+</tbody>
+</table>
+
+@if (m.Status == MonthStatus.Draft)
+{
+<form method="post" action="/Schedule/Adjust?y=@m.Jy&m=@m.Jm" class="card">
+  @Html.AntiForgeryToken()
+  <h3>ثبت بخشودگی / اصلاح دستی</h3>
+  <label>فرد <select name="personId">@foreach (var r in Model) { <option value="@r.PersonnelId">@r.Name</option> }</select></label>
+  <label>مقدار (واحد، مثبت = بخشودگی) <input name="amount" type="number" min="-100" max="100" required /><span class="help">عدد مثبت از بدهی فرد کم می‌کند و عدد منفی به آن اضافه می‌کند.</span></label>
+  <label>دلیل <input name="reason" required /><span class="help">مثال: «بیماری با گواهی پزشک». این دلیل در سوابق ثبت می‌شود.</span></label>
+  <button>ثبت</button>
+</form>
+}
+@if (m.Status == MonthStatus.Approved)
+{
+<form method="post" action="/Schedule/Settle?y=@m.Jy&m=@m.Jm" class="inline">@Html.AntiForgeryToken()
+  <label><input type="checkbox" name="confirm" value="true" /> مطمئنم (پس از تسویه، ماه قابل ویرایش نیست)</label><button>تسویهٔ ماه</button></form>
+}
+
+<h3>سوابق بخشودگی/اصلاح</h3>
+<table class="grid">
+<thead><tr><th>نام</th><th>مقدار</th><th>دلیل</th><th>زمان ثبت</th></tr></thead>
+<tbody>
+@foreach (var a in adjustments)
+{
+  <tr><td>@a.Name</td><td>@a.Amount</td><td>@a.Reason</td><td dir="ltr">@a.CreatedAt</td></tr>
+}
+</tbody>
+</table>

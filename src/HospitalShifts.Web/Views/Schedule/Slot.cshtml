@@ -1,0 +1,49 @@
+@model List<AssignmentEntry>
+@{
+    DateOnly date = ViewBag.Date; Slot slot = ViewBag.Slot; SchedulingContext ctx = ViewBag.Context;
+    ViewBag.Title = "ویرایش نوبت";
+    var (y, mo, _) = date.ToJalali();
+    var leader = Model.FirstOrDefault(r => r.IsLeader);
+    var leaderKey = leader == null ? "" : $"{leader.LocationId}|{leader.Role.ToCode()}";
+    var locs = ctx.Locations.Values.Where(l => l.Active || Model.Any(r => r.LocationId == l.Id)).OrderBy(l => l.Name).ToList();
+}
+<h2>@date.ToLongLabel() — نوبت @slot.ToLabel()</h2>
+<p class="guide">برای هر جایگاه یک نفر انتخاب کنید. سرشیفت باید روی جایگاه افسرِ پرشده باشد. اگر ذخیره خطای قانونی جدیدی (استراحت، شیفت غیرمجاز، صبح سربازان و…) بسازد، انجام نمی‌شود.</p>
+<form method="post" action="/Schedule/Slot?date=@Jalali.Iso(date)&slot=@slot.ToCode()">
+@Html.AntiForgeryToken()
+<table class="grid">
+<thead><tr><th>محل</th><th>نقش</th><th>فرد</th><th>سرشیفت</th></tr></thead>
+<tbody>
+@foreach (var l in locs)
+{
+  foreach (var role in PersonKinds.All)
+  {
+    var selected = Model.FirstOrDefault(r => r.LocationId == l.Id && r.Role == role)?.PersonnelId ?? 0;
+    if (l.Need(slot, role) == 0 && selected == 0) { continue; }
+    var key = $"{l.Id}|{role.ToCode()}";
+    <tr>
+      <td>@l.Name @(ctx.IsClosed(l.Id, date) ? "(تعطیل)" : "")</td>
+      <td>@role.ToLabel()</td>
+      <td>
+        <select name="p_@(l.Id)_@role.ToCode()">
+          <option value="0">— خالی —</option>
+          @foreach (var p in ctx.People.Values.Where(p => p.Type == role && (p.Active || p.Id == selected)).OrderBy(p => p.Name))
+          {
+            <option value="@p.Id" selected="@(p.Id == selected)">@p.Name</option>
+          }
+        </select>
+      </td>
+      <td>
+        @if (role == PersonKind.Official)
+        {
+          <input type="radio" name="leader" value="@key" checked="@(key == leaderKey)" />
+        }
+      </td>
+    </tr>
+  }
+}
+</tbody>
+</table>
+<label><input type="radio" name="leader" value="" checked="@(leaderKey == "")" /> بدون سرشیفت</label>
+<div class="bar"><button>ذخیره نوبت</button> <a class="btn" href="/Schedule?y=@y&m=@mo">بازگشت</a></div>
+</form>

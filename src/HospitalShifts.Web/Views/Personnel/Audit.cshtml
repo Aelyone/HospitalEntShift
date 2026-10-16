@@ -1,0 +1,12 @@
+@model List<AuditEntryDto>
+@{ ViewBag.Title = "گزارش رویدادها"; }
+<h1>گزارش رویدادها (۲۰۰ مورد اخیر)</h1>
+<table class="grid">
+<thead><tr><th>زمان (UTC)</th><th>کاربر</th><th>عملیات</th><th>جزئیات</th></tr></thead>
+<tbody>
+@foreach (var a in Model)
+{
+  <tr><td dir="ltr">@a.At</td><td>@a.Actor</td><td>@a.Action</td><td>@a.Detail</td></tr>
+}
+</tbody>
+</table>

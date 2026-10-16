@@ -1,0 +1,27 @@
+@model List<Location>
+@{ ViewBag.Title = "محل‌ها"; }
+<h1>محل‌های نگهبانی</h1>
+<div class="guide"><b>راهنما:</b> محل‌های نگهبانی بیمارستان. محل حذف نمی‌شود؛ اگر دیگر استفاده نمی‌شود غیرفعالش کنید. «ترتیب» تعیین می‌کند محل در جدول‌ها چندم نمایش داده شود.</div>
+<p><a class="btn" href="/Locations/Edit">افزودن محل</a></p>
+<table class="grid">
+<thead><tr><th>ترتیب</th><th>نام</th><th>وضعیت</th><th></th></tr></thead>
+<tbody>
+@foreach (var l in Model)
+{
+  var active = l.Active;
+  <tr class="@(active ? "" : "off")">
+    <td>@l.Sort</td>
+    <td>@l.Name</td>
+    <td>@(active ? "فعال" : "غیرفعال")</td>
+    <td>
+      <a href="/Locations/Edit/@l.Id">ویرایش</a>
+      <form method="post" action="/Locations/Active" class="inline">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@l.Id" />
+        <input type="hidden" name="active" value="@(active ? "false" : "true")" />
+        <button class="link">@(active ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+      </form>
+    </td>
+  </tr>
+}
+</tbody>
+</table>

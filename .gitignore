@@ -1,0 +1,25 @@
+## Visual Studio / Rider
+.vs/
+.idea/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+out/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Data files (SQLite قدیمی و بکاپ‌های محلی)
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+
+## Logs
+*.log

@@ -1,0 +1,37 @@
+@model List<Personnel>
+@{ ViewBag.Title = "پرسنل"; }
+<h1>پرسنل</h1>
+<div class="guide"><b>راهنما:</b> فهرست همه افسران و سربازان. برای تغییر مشخصات یا شیفت‌های مجاز روی «ویرایش» بزنید. با غیرفعال‌سازی، فرد از برنامه‌های بعدی خارج می‌شود و تخصیص‌های آینده‌اش در ماه‌های تسویه‌نشده پاک می‌شود، ولی سوابقش می‌ماند (تیک «تأیید» لازم است).</div>
+<p><a class="btn" href="/Personnel/Edit">افزودن فرد</a></p>
+<form method="post" action="/Personnel/DefaultRest" class="bar">@Html.AntiForgeryToken()
+  <label>استراحت پیش‌فرض پس از شیفت (ساعت):
+    <input type="number" name="hours" min="0" max="72" value="@ViewBag.DefaultRest" /><span class="help">برای افرادی که استراحت اختصاصی ندارند. پیشنهاد: ۱۲ ساعت.</span></label>
+  <button>ذخیره</button>
+</form>
+<table class="grid">
+<thead><tr><th>نام</th><th>نوع</th><th>بخش</th><th>سهم پایه</th><th>مانده اولیه</th><th>سرشیفت</th><th>وضعیت</th><th></th></tr></thead>
+<tbody>
+@foreach (var p in Model)
+{
+  var active = p.Active;
+  <tr class="@(active ? "" : "off")">
+    <td>@p.FirstName @p.LastName</td>
+    <td>@p.Type.ToLabel()</td>
+    <td>@p.Department</td>
+    <td>@p.BaseShare</td>
+    <td>@p.InitialBalance</td>
+    <td>@(p.CanLeader ? $"بله ({p.LeaderPriority})" : "—")</td>
+    <td>@(active ? "فعال" : "غیرفعال")</td>
+    <td>
+      <a href="/Personnel/Edit/@p.Id">ویرایش</a>
+      <form method="post" action="/Personnel/Active" class="inline">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@p.Id" />
+        <input type="hidden" name="active" value="@(active ? "false" : "true")" />
+        @if (active) { <label class="small"><input type="checkbox" name="confirm" value="true" /> تأیید</label> }
+        <button class="link">@(active ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+      </form>
+    </td>
+  </tr>
+}
+</tbody>
+</table>

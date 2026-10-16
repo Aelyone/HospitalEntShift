@@ -1,0 +1,52 @@
+@model LocationForm
+@{
+    ViewBag.Title = Model.Id > 0 ? "ویرایش محل" : "افزودن محل";
+    var closures = (List<DateOnly>)ViewBag.Closures;
+}
+<h1>@ViewBag.Title</h1>
+<div class="guide"><b>راهنما:</b> برای هر نوبت (صبح، عصر، شب) مشخص کنید آیا این محل به یک افسر و/یا یک سرباز نیاز دارد. اگر نوبتی تیک نداشته باشد، در آن نوبت کسی اینجا گذاشته نمی‌شود.</div>
+<form method="post" action="/Locations/Edit" class="form">@Html.AntiForgeryToken()
+  <input type="hidden" name="Id" value="@Model.Id" />
+  <input type="hidden" name="Active" value="@(Model.Active ? "true" : "false")" />
+  <label>نام <input name="Name" value="@Model.Name" required /><span class="help">نام تکراری پذیرفته نمی‌شود. مثال: درب اصلی، اورژانس.</span></label>
+  <label>ترتیب نمایش <input type="number" name="Sort" value="@Model.Sort" /><span class="help">عدد کوچک‌تر، بالاتر نمایش داده می‌شود.</span></label>
+  <fieldset>
+    <legend>نیاز هر نوبت</legend>
+    <table class="grid">
+      <tr><th>نوبت</th><th>افسر</th><th>سرباز</th></tr>
+      @foreach (var s in Slots.All)
+      {
+        <tr>
+          <td>@s.ToLabel()</td>
+          <td><input type="checkbox" name="NeedOfficial" value="@s.ToCode()" checked="@Model.NeedOfficial.Contains(s.ToCode())" /></td>
+          <td><input type="checkbox" name="NeedSoldier" value="@s.ToCode()" checked="@Model.NeedSoldier.Contains(s.ToCode())" /></td>
+        </tr>
+      }
+    </table>
+  </fieldset>
+  <button class="btn">ذخیره</button>
+  <a href="/Locations">بازگشت</a>
+</form>
+
+@if (Model.Id > 0)
+{
+  <h2>روزهای تعطیل این محل</h2>
+  <div class="guide">در روز تعطیل کسی به این محل اختصاص داده نمی‌شود. تاریخ را به شمسی و به شکل ۱۴۰۴/۰۱/۱۵ بنویسید.</div>
+  <form method="post" action="/Locations/AddClosure" class="bar">@Html.AntiForgeryToken()
+    <input type="hidden" name="id" value="@Model.Id" />
+    <label>تاریخ شمسی <input name="date" placeholder="1404/01/15" dir="ltr" required /></label>
+    <button>افزودن (تخصیص‌های آن روز در ماه‌های پیش‌نویس حذف می‌شود)</button>
+  </form>
+  <ul>
+  @foreach (var d in closures)
+  {
+    <li>@d.ToLongLabel()
+      <form method="post" action="/Locations/RemoveClosure" class="inline">@Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="date" value="@Jalali.Iso(d)" />
+        <button class="link">حذف</button>
+      </form>
+    </li>
+  }
+  </ul>
+}

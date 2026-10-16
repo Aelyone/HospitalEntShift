@@ -1,0 +1,40 @@
+@model PersonForm
+@{ ViewBag.Title = Model.Id > 0 ? "ویرایش فرد" : "افزودن فرد"; }
+<h1>@ViewBag.Title</h1>
+<div class="guide"><b>راهنما:</b> مشخصات فرد را وارد کنید. «سهم پایه» تعداد واحد شیفتی است که فرد باید در ماه بدهد (صبح و عصر ۱ واحد، شب ۲ واحد). فقط شیفت‌هایی که تیک خورده‌اند برای این فرد چیده می‌شوند. برای خارج کردن فرد از برنامه، به‌جای حذف او را غیرفعال کنید تا سوابقش بماند.</div>
+<form method="post" action="/Personnel/Edit" class="form">@Html.AntiForgeryToken()
+  <input type="hidden" name="Id" value="@Model.Id" />
+  <input type="hidden" name="Active" value="@(Model.Active ? "true" : "false")" />
+  <label>نوع
+    <select name="Type">
+      <option value="@PersonKind.Official.ToCode()" selected="@(Model.Type == PersonKind.Official.ToCode())">افسر / کادر رسمی</option>
+      <option value="@PersonKind.Soldier.ToCode()" selected="@(Model.Type == PersonKind.Soldier.ToCode())">سرباز</option>
+    </select><span class="help">سربازان سرشیفت نمی‌شوند و صبح شنبه تا پنجشنبه در بخش خود هستند. نوع فردی که سابقه شیفت دارد قابل تغییر نیست.</span></label>
+  <label>نام <input name="FirstName" value="@Model.FirstName" required /></label>
+  <label>نام خانوادگی <input name="LastName" value="@Model.LastName" required /></label>
+  <label>تلفن <input name="Phone" value="@Model.Phone" /></label>
+  <label>نشانی <input name="Address" value="@Model.Address" /></label>
+  <label>بخش (برای سرباز: محل حضور صبح شنبه تا پنجشنبه) <input name="Department" value="@Model.Department" /><span class="help">فقط برای اطلاع و نمایش است؛ محدودیت صبح سرباز به‌طور خودکار اعمال می‌شود.</span></label>
+  <label>رده (اطلاعاتی) <input name="Level" value="@Model.Level" /><span class="help">در چیدن شیفت اثری ندارد.</span></label>
+  <label>سهم پایه ماهانه (واحد) <input type="number" name="BaseShare" value="@Model.BaseShare" min="0" /><span class="help">مثلاً ۲۰. اگر فرد سهمش را کامل ندهد، کسری به ماه بعد منتقل می‌شود.</span></label>
+  <label>مانده اولیه <input type="number" name="InitialBalance" value="@Model.InitialBalance" /><span class="help">برای شروع کار با سامانه: مثبت یعنی فرد از قبل اضافه‌کار دارد، منفی یعنی بدهکار است. معمولاً صفر.</span></label>
+  <label><input type="checkbox" name="CanLeader" value="true" checked="@Model.CanLeader" /> صلاحیت سرشیفتی (فقط افسر)<span class="help">اگر تیک بخورد، سامانه می‌تواند او را سرشیفت نوبت‌هایش کند.</span></label>
+  <label>اولویت سرشیفتی <input type="number" name="LeaderPriority" value="@Model.LeaderPriority" /><span class="help">عدد بزرگ‌تر یعنی اولویت بیشتر برای سرشیفت شدن.</span></label>
+
+  <fieldset>
+    <legend>شیفت‌های مجاز و استراحت پس از آن (ساعت؛ خالی = پیش‌فرض)</legend>
+    <span class="help">تیک = این شیفت برای فرد مجاز است. عدد کنار هر شیفت، حداقل ساعت استراحت بعد از آن است؛ اگر خالی بماند، استراحت پیش‌فرض (صفحه پرسنل) اعمال می‌شود. شیفت‌های ترکیبی فقط دستی چیده می‌شوند.</span>
+    <table class="grid">
+    @foreach (var t in ShiftDefinitions.All)
+    {
+      Model.Rest.TryGetValue(t.Code, out var rest);
+      <tr>
+        <td><label><input type="checkbox" name="Allowed" value="@t.Code" checked="@Model.Allowed.Contains(t.Code)" /> @t.Name (@t.Units واحد)</label></td>
+        <td><input type="number" name="Rest[@t.Code]" value="@rest" min="0" max="72" /></td>
+      </tr>
+    }
+    </table>
+  </fieldset>
+  <button class="btn">ذخیره</button>
+  <a href="/Personnel">بازگشت</a>
+</form>

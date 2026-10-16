@@ -1,0 +1,58 @@
+@model ScheduleBoardDto
+@{
+    var m = Model.Month; ViewBag.Title = "برنامه " + m.Title;
+    var (py, pm) = m.Prev();
+    var (ny, nm) = m.Next();
+    var bySlot = Model.Rows.ToLookup(r => r.CellKey);
+    var errBy = Model.Violations.ToLookup(v => v.CellKey);
+    var shortBy = Model.Gaps.ToLookup(g => g.CellKey);
+    var noLeader = Model.LeaderMissing.Select(x => x.CellKey).ToHashSet();
+    string PersonName(int id) => Model.Context.People.TryGetValue(id, out var p) ? p.Name : "#" + id;
+    string LocationName(int id) => Model.Context.Locations.TryGetValue(id, out var l) ? l.Name : "#" + id;
+}
+<div class="bar">
+  <a class="btn" href="/Schedule?y=@py&m=@pm">‹ ماه قبل</a>
+  <h2>@m.Title <span class="tag @m.StatusCode">@m.StatusLabel</span></h2>
+  <a class="btn" href="/Schedule?y=@ny&m=@nm">ماه بعد ›</a>
+  <form method="get" class="inline"><input name="y" value="@m.Jy" size="4" /> / <input name="m" value="@m.Jm" size="2" /><button>برو</button></form>
+</div>
+<div class="bar">
+@if (m.Status == MonthStatus.Draft)
+{
+  <form method="post" action="/Schedule/Generate?y=@m.Jy&m=@m.Jm" class="inline">@Html.AntiForgeryToken()<button>چیدن خودکار (فقط خانه‌های خالی)</button></form>
+  <form method="post" action="/Schedule/Clear?y=@m.Jy&m=@m.Jm" class="inline danger">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirm" value="true" /> مطمئنم</label><button>پاک‌کردن کل ماه</button></form>
+  <form method="post" action="/Schedule/Approve?y=@m.Jy&m=@m.Jm" class="inline">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirm" value="true" /> مطمئنم</label><button>تأیید نهایی ماه</button></form>
+}
+else if (m.Status == MonthStatus.Approved)
+{
+  <form method="post" action="/Schedule/Reopen?y=@m.Jy&m=@m.Jm" class="inline">@Html.AntiForgeryToken()<label><input type="checkbox" name="confirm" value="true" /> مطمئنم</label><button>بازگشت به پیش‌نویس</button></form>
+}
+  <a class="btn" href="/Schedule/Ledger?y=@m.Jy&m=@m.Jm">سهم و تسویه این ماه</a>
+</div>
+<div class="guide"><b>راهنما:</b><ul><li><b>چیدن خودکار</b> فقط خانه‌های خالی را با شیفت‌های تکی پر می‌کند و به خانه‌هایی که دستی پر کرده‌اید دست نمی‌زند. شیفت‌های ترکیبی (مثل عصر+شب) را دستی بچینید.</li><li>برای تغییر یک نوبت روی «ویرایش» در همان خانه بزنید.</li><li>خانهٔ <span style="color:#dc2626">قرمز</span> یعنی خطای قانونی (مثلاً استراحت کافی نیست) و خانهٔ <span style="color:#d97706">نارنجی</span> یعنی کمبود نیرو. ★ نشانهٔ سرشیفت است.</li><li>ماه تا وقتی خطای قانونی دارد تأیید نمی‌شود، ولی کمبود نیرو مانع تأیید نیست. بعد از تأیید، ماه قابل ویرایش نیست مگر اینکه به پیش‌نویس برگردانید.</li></ul></div>
+<p class="summary">خطای سخت: <b>@Model.Violations.Count</b> | کمبود نیرو: <b>@Model.Gaps.Sum(g => g.Needed - g.Filled)</b> | نوبت بدون سرشیفت: <b>@Model.LeaderMissing.Count</b></p>
+<table class="board">
+<thead><tr><th>تاریخ</th>@foreach (var s in Slots.All) { <th>@s.ToLabel()</th> }</tr></thead>
+<tbody>
+@foreach (var d in m.Dates())
+{
+  <tr class="@(d.IsFriday() ? "fri" : "")">
+    <th>@d.ToLongLabel()</th>
+    @foreach (var s in Slots.All)
+    {
+      var key = CellKeys.Of(d, s);
+      <td class="@(errBy[key].Any() ? "has-err" : shortBy[key].Any() ? "has-short" : "")">
+        @foreach (var r in bySlot[key].OrderBy(r => LocationName(r.LocationId)))
+        {
+          <span class="chip @r.Role.ToCode() @(r.IsLeader ? "leader" : "")">@LocationName(r.LocationId): @PersonName(r.PersonnelId)@(r.IsLeader ? " ★" : "")</span>
+        }
+        @foreach (var v in errBy[key].Select(v => v.Message).Distinct()) { <div class="e">⚠ @v</div> }
+        @foreach (var g in shortBy[key]) { <div class="s">کمبود @g.Role.ToLabel() @g.LocationName: @(g.Needed - g.Filled)</div> }
+        @if (noLeader.Contains(key)) { <div class="s">بدون سرشیفت</div> }
+        @if (m.Status == MonthStatus.Draft) { <a class="edit" href="/Schedule/Slot?date=@Jalali.Iso(d)&slot=@s.ToCode()">ویرایش</a> }
+      </td>
+    }
+  </tr>
+}
+</tbody>
+</table>

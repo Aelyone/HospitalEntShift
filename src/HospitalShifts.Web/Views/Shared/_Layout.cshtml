@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>@(ViewBag.Title ?? "شیفت انتظامات")</title>
+<link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+<nav class="top">
+  <b>سامانه شیفت انتظامات</b>
+  <a href="/Schedule">برنامه ماهانه</a>
+  <a href="/Schedule/Ledger">سهم و تسویه</a>
+  <a href="/Personnel">پرسنل</a>
+  <a href="/Locations">محل‌ها</a>
+  <a href="/Personnel/Audit">گزارش رویدادها</a>
+  <span class="grow"></span>
+  <a href="/Account/ChangePassword">تغییر رمز</a>
+  <form method="post" action="/Account/Logout" class="inline">@Html.AntiForgeryToken()<button class="link">خروج (@User.Identity.Name)</button></form>
+</nav>
+}
+<main>
+@if (TempData["ok"] is string ok) { <div class="msg ok">@ok</div> }
+@if (TempData["err"] is string er) { <div class="msg err">@er</div> }
+@if (ViewBag.Err is string e2) { <div class="msg err">@e2</div> }
+@RenderBody()
+</main>
+</body>
+</html>

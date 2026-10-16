@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "HospitalShifts": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:14970;http://localhost:14971"
+    }
+  }
+}
